@@ -43,7 +43,14 @@
 */
 uint64_t Tools::buildLong(uint8_t bytes[LONGSIZE])
 {
-  return 0;
+  uint64_t newLong = 0;
+  for (int i = (LONGSIZE - 1); i > 0; i--)
+  {
+    newLong += bytes[i];
+    newLong = (newLong << 8);
+  }
+  newLong += bytes[0];
+  return newLong;
 }
 
 /** 
@@ -53,6 +60,8 @@ uint64_t Tools::buildLong(uint8_t bytes[LONGSIZE])
  *
  * for example, getByte(0x1122334455667788, 7) returns 0x11
  *              getByte(0x1122334455667788, 1) returns 0x77
+                getByte(0x1122334455667788, 2) returns 0x66
+ *              getByte(0x1122334455667788, 6) returns 0x22
  *              getByte(0x1122334455667788, 8) returns 0
  *
  * @param uint64_t source that is the source data
@@ -67,7 +76,24 @@ uint64_t Tools::buildLong(uint8_t bytes[LONGSIZE])
 */
 uint64_t Tools::getByte(uint64_t source, int32_t byteNum)
 {
+  if (byteNum > 7 || byteNum < 0)
   return 0;
+  // shift right then shift left
+  // uint64_t output = source;
+  // uint64_t shiftRight = 0;
+  // uint64_t shiftLeft = 0;
+  // shiftRight = (8 * (7 - byteNum));
+  // shiftLeft = (8 * (byteNum));
+  // output = (output >> shiftLeft);
+  // output = (output << shiftRight);
+
+  // Mask?
+  uint64_t mask = 0x00000000000000FF;
+  mask = (mask << (byteNum * 8));
+  source = (mask & source);
+  source = source >> (byteNum * 8);
+
+  return source;
 }
 
 /**
@@ -97,7 +123,13 @@ uint64_t Tools::getByte(uint64_t source, int32_t byteNum)
  */
 uint64_t Tools::getBits(uint64_t source, int32_t low, int32_t high)
 {
+  if (low < 0 || high > 63)
   return 0;
+  // Shift left then shift right?
+  source = source << (63 - high); 
+  source = source >> (63 - high);
+  source = source >> low;
+  return source;
 }
 
 
@@ -125,7 +157,17 @@ uint64_t Tools::getBits(uint64_t source, int32_t low, int32_t high)
  */
 uint64_t Tools::setBits(uint64_t source, int32_t low, int32_t high)
 {
+  if (low < 0 || high > 63)
   return 0;
+  // Create mask
+  // Shift mask over bits that need to get set.
+  // Set source bits to or with 1's in selected area
+  uint64_t mask = 0xFFFFFFFFFFFFFFFF;
+  mask = mask >> low;
+  mask = mask << low;
+  mask = mask << (63 - high);
+  mask = mask >> (63 - high);
+  return source | mask;
 }
 
 /**
@@ -288,4 +330,5 @@ bool Tools::subOverflow(uint64_t op1, uint64_t op2)
   //op1 in order to an add, you may get an overflow. 
   //NOTE: the subtraction is op2 - op1 (not op1 - op2).
   return false;
+
 }
