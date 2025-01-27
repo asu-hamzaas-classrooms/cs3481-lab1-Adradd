@@ -78,14 +78,7 @@ uint64_t Tools::getByte(uint64_t source, int32_t byteNum)
 {
   if (byteNum > 7 || byteNum < 0)
   return 0;
-  // shift right then shift left
-  // uint64_t output = source;
-  // uint64_t shiftRight = 0;
-  // uint64_t shiftLeft = 0;
-  // shiftRight = (8 * (7 - byteNum));
-  // shiftLeft = (8 * (byteNum));
-  // output = (output >> shiftLeft);
-  // output = (output << shiftRight);
+ 
 
   // Mask?
   uint64_t mask = 0x00000000000000FF;
@@ -192,7 +185,19 @@ uint64_t Tools::setBits(uint64_t source, int32_t low, int32_t high)
  */
 uint64_t Tools::clearBits(uint64_t source, int32_t low, int32_t high)
 {
-  return 0;
+  if (low < 0 || high > 63 || low > high)
+  return source;
+
+// Use get bits to get the bits of the region. THen, put that in the mask.
+  uint64_t mask = 0xFFFFFFFFFFFFFFFF;
+  uint64_t bitsThatAreSet = setBits(source, low, high);
+  mask = mask >> low;
+  mask = mask << low;
+  mask = mask << (63 - high);
+  mask = mask >> (63 - high);
+  mask = ~mask;
+  bitsThatAreSet = bitsThatAreSet & mask;
+  return bitsThatAreSet;
 }
 
 
@@ -223,7 +228,18 @@ uint64_t Tools::clearBits(uint64_t source, int32_t low, int32_t high)
 uint64_t Tools::copyBits(uint64_t source, uint64_t dest, 
                          int32_t srclow, int32_t dstlow, int32_t length)
 {
-   return 0; 
+  if (srclow < 0 || dstlow < 0 || (srclow + length) > 63 || (dstlow + length) > 63)
+  return dest;
+  uint64_t dstHigh = dstlow + length - 1;
+  uint64_t srcHigh = srclow + length - 1;
+  
+  uint64_t mask = getBits(source, srclow, srcHigh);
+  mask = mask >> (63 - length);
+  mask = mask << (dstlow);
+  dest = clearBits(dest, dstlow, dstHigh);
+  dest = dest + mask;
+  return dest;
+
 }
 
 
@@ -248,7 +264,10 @@ uint64_t Tools::copyBits(uint64_t source, uint64_t dest,
  */
 uint64_t Tools::setByte(uint64_t source, int32_t byteNum)
 {
-  return 0;
+  if (byteNum > 7 || byteNum < 0)
+  return source;
+  source = setBits(source, byteNum * 8, ((byteNum + 1) * 8) - 1);
+  return source;
 }
 
 
@@ -270,7 +289,7 @@ uint64_t Tools::setByte(uint64_t source, int32_t byteNum)
  */
 uint64_t Tools::sign(uint64_t source)
 {
-  return 0;
+  return getBits(source, 63, 63);
 }
 
 /**
@@ -300,7 +319,9 @@ bool Tools::addOverflow(uint64_t op1, uint64_t op2)
   //      Thus, the way to check for an overflow is to compare the signs of the
   //      operand and the result.  For example, if you add two positive numbers, 
   //      the result should be positive, otherwise an overflow occurred.
-  return false;
+  bool sign1 = sign(op1);
+  int64_t op3 = op1 + op2;
+  return !(sign1 == sign(op3));
 }
 
 /**
@@ -329,6 +350,8 @@ bool Tools::subOverflow(uint64_t op1, uint64_t op2)
   //Note: you can not simply use addOverflow in this function.  If you negate
   //op1 in order to an add, you may get an overflow. 
   //NOTE: the subtraction is op2 - op1 (not op1 - op2).
-  return false;
+  bool sign2 = sign(op2);
+  int64_t op3 = op2 - op1;
+  return !(sign(op3) == sign2 || sign(op3) != sign(op1));
 
 }
