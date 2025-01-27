@@ -228,16 +228,18 @@ uint64_t Tools::clearBits(uint64_t source, int32_t low, int32_t high)
 uint64_t Tools::copyBits(uint64_t source, uint64_t dest, 
                          int32_t srclow, int32_t dstlow, int32_t length)
 {
-  if (srclow < 0 || dstlow < 0 || (srclow + length) > 63 || (dstlow + length) > 63)
+  if (srclow < 0 || dstlow < 0 || (srclow + length - 1) > 63 || (dstlow + length - 1) > 63 || length < 0)
   return dest;
+
   uint64_t dstHigh = dstlow + length - 1;
   uint64_t srcHigh = srclow + length - 1;
   
-  uint64_t mask = getBits(source, srclow, srcHigh);
-  mask = mask >> (63 - length);
-  mask = mask << (dstlow);
+  uint64_t mask = getBits(source, srclow, srcHigh); //get bits you are setting //0x00000000003231230
+  // mask = mask >> (63 - length); //right shift those bits to the 0th bit in the bits you want to set over
+  mask = mask << (dstlow); // left shift this to the dstlow on the mask
+
   dest = clearBits(dest, dstlow, dstHigh);
-  dest = dest + mask;
+  dest = dest | mask;
   return dest;
 
 }
